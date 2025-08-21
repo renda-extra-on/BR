@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaRend - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        secondary: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            300: '#c4b5fd',
+                            400: '#a78bfa',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+        
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .bottom-nav {
+            box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05), 0 -2px 6px rgba(0, 0, 0, 0.02);
+            backdrop-filter: blur(8px);
+            background-color: rgba(255, 255, 255, 0.95);
+        }
+        
+        .active-tab {
+            color: #4f46e5;
+        }
+        
+        .task-item:hover {
+            transform: translateY(-2px);
+            transition: all 0.2s ease;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .notification-empty {
+            padding: 1.5rem;
+            text-align: center;
+            color: #64748b;
+        }
+        
+        .start-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .start-btn:hover {
+            transform: scale(1.05);
+            background-color: #2563eb !important;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+        
+        .empty-withdrawals {
+            text-align: center;
+            padding: 1.5rem;
+            color: #64748b;
+        }
+        
+        /* Improved infinite scrolling animation */
+        #withdrawals-container {
+            height: 288px;
+            overflow: hidden;
+            position: relative;
+            mask-image: linear-gradient(to bottom,
+                transparent 0%,
+                black 15%,
+                black 85%,
+                transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom,
+                transparent 0%,
+                black 15%,
+                black 85%,
+                transparent 100%);
+        }
+        
+        .withdrawals-wrapper {
+            position: absolute;
+            width: 100%;
+            will-change: transform;
+            transition: transform 0.5s ease-out;
+        }
+        
+        .withdraw-item {
+            background-color: #f8fafc;
+            border-radius: 10px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+            height: 60px;
+            transition: all 0.3s ease;
+        }
+        
+        .withdraw-item:hover {
+            transform: translateX(5px) !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .withdraw-icon {
+            background-color: #d1fae5;
+            padding: 0.5rem;
+            border-radius: 9999px;
+            margin-right: 0.75rem;
+            color: #10b981;
+        }
+        
+        .withdraw-amount {
+            font-weight: 600;
+            color: #10b981;
+        }
+        
+        .withdraw-time {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+        }
+        
+        .withdraw-phone {
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        
+        /* Animation classes */
+        .slide-up {
+            animation: slideUp 0.5s ease-out forwards;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+        }
+        
+        .slide-down {
+            animation: slideDown 0.5s ease-out forwards;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Online users indicator */
+        .online-users {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-left: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .online-users::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #10b981;
+            border-radius: 50%;
+            margin-right: 6px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+        
+        /* Service unavailable modal */
+        .service-modal {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        
+        .service-modal.hide {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+        
+        /* Input styles */
+        .input-field {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+        
+        /* Button styles */
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            padding: 0.625rem 1.25rem;
+        }
+        
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #4338ca;
+        }
+        
+        .btn-secondary {
+            background-color: #f1f5f9;
+            color: #334155;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c7d2fe;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a5b4fc;
+        }
+        
+        /* Floating action button */
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-color: #4f46e5;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        
+        .fab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            background-color: #4338ca;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="gradient-bg text-white p-4">
+            <div class="container mx-auto px-4 flex justify-between items-center">
+                <div class="flex items-center">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-white/20 p-2 rounded-xl">
+                            <i class="fas fa-wallet text-xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold tracking-tight">MetaRend</h1>
+                            <p class="text-xs opacity-80">Seu rendimento inteligente</p>
+                        </div>
+                    </div>
+                    <div class="online-users">
+                        <span id="online-users-count">0</span> online
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button id="notification-btn" class="p-2 rounded-full hover:bg-white/10 transition-colors">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-user text-sm"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Notification Modal -->
+        <div id="notification-modal" class="modal">
+            <div class="modal-content">
+                <div class="notification-empty">
+                    <i class="fas fa-bell-slash text-4xl mb-3 text-gray-300"></i>
+                    <h3 class="font-medium text-lg text-gray-800">Nenhuma notificação</h3>
+                    <p class="text-sm mt-2 text-gray-500">Você não tem nenhuma notificação no momento.</p>
+                </div>
+                <button onclick="closeModal('notification-modal')" class="btn btn-primary mt-6 w-full">Fechar</button>
+            </div>
+        </div>
+
+        <!-- Deposit Modal -->
+        <div id="deposit-modal" class="modal">
+            <div class="modal-content">
+                <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-coins text-2xl text-blue-500"></i>
+                </div>
+                <h3 class="font-medium text-lg text-gray-800">Depósito</h3>
+                <p class="text-sm text-gray-500 mt-2">Adicione fundos à sua conta MetaRend</p>
+                
+                <div class="mt-6 space-y-4">
+                    <div class="text-left">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Valor do depósito</label>
+                        <input type="number" placeholder="R$ 0,00" class="input-field w-full">
+                    </div>
+                    
+                    <div class="text-left">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Método de pagamento</label>
+                        <select class="input-field w-full">
+                            <option>Pix</option>
+                            <option>Transferência Bancária</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button onclick="showServiceUnavailable('deposit')" class="btn btn-primary mt-6 w-full">
+                    <i class="fas fa-arrow-down mr-2"></i> Confirmar Depósito
+                </button>
+                <button onclick="closeModal('deposit-modal')" class="btn btn-secondary mt-2 w-full">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- Withdraw Modal -->
+        <div id="withdraw-modal" class="modal">
+            <div class="modal-content">
+                <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-hand-holding-usd text-2xl text-green-500"></i>
+                </div>
+                <h3 class="font-medium text-lg text-gray-800">Saque</h3>
+                <p class="text-sm text-gray-500 mt-2">Você pode sacar seu dinheiro para sua conta bancária ou carteira digital.</p>
+                
+                <div class="mt-6 space-y-4">
+                    <div class="text-left">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Valor do saque (mínimo: R$ 5,00)</label>
+                        <input type="number" placeholder="R$ 0,00" class="input-field w-full">
+                    </div>
+                    
+                    <div class="text-left">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Método de saque</label>
+                        <select class="input-field w-full">
+                            <option>Pix</option>
+                            <option>Transferência Bancária</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button onclick="showServiceUnavailable('withdraw')" class="btn btn-primary mt-6 w-full bg-green-500 hover:bg-green-600">
+                    <i class="fas fa-arrow-up mr-2"></i> Solicitar Saque
+                </button>
+                <button onclick="closeModal('withdraw-modal')" class="btn btn-secondary mt-2 w-full">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- Transfer Modal -->
+        <div id="transfer-modal" class="modal">
+            <div class="modal-content">
+                <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exchange-alt text-2xl text-purple-500"></i>
+                </div>
+                <h3 class="font-medium text-lg text-gray-800">Transferência</h3>
+                <p class="text-sm text-gray-500 mt-2">Transfira dinheiro para outros usuários do MetaRend.</p>
+                
+                <div class="mt-6 space-y-4">
+                    <div class="text-left">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ID do destinatário</label>
+                        <input type="text" placeholder="Digite o ID do usuário" class="input-field w-full">
+                    </div>
+                    
+                    <div class="text-left">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Valor da transferência</label>
+                        <input type="number" placeholder="R$ 0,00" class="input-field w-full">
+                    </div>
+                    
+                    <div class="text-left">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mensagem (opcional)</label>
+                        <textarea class="input-field w-full" placeholder="Adicione uma mensagem"></textarea>
+                    </div>
+                </div>
+                
+                <button onclick="showServiceUnavailable('transfer')" class="btn btn-primary mt-6 w-full bg-purple-500 hover:bg-purple-600">
+                    <i class="fas fa-paper-plane mr-2"></i> Confirmar Transferência
+                </button>
+                <button onclick="closeModal('transfer-modal')" class="btn btn-secondary mt-2 w-full">Cancelar</button>
+            </div>
+        </div>
+        
+        <!-- Service Unavailable Modal -->
+        <div id="service-unavailable-modal" class="modal">
+            <div class="modal-content service-modal">
+                <div class="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exclamation-triangle text-2xl text-yellow-500"></i>
+                </div>
+                <h3 class="font-medium text-lg text-gray-800">Serviço Indisponível</h3>
+                <p id="service-message" class="text-sm text-gray-500 mt-2 mb-6"></p>
+                
+                <div class="flex flex-col space-y-3">
+                    <button onclick="showContactSupport()" class="btn btn-primary">
+                        <i class="fas fa-headset mr-2"></i> Falar com Suporte
+                    </button>
+                    <button onclick="closeServiceModal()" class="btn btn-secondary">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="flex-1 container mx-auto p-4 pb-20">
+            <!-- Dashboard Page (default visible) -->
+            <div id="dashboard-page">
+                <!-- Balance Card -->
+                <div class="gradient-bg text-white rounded-2xl p-6 mb-6 card">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm opacity-90">Saldo disponível</p>
+                            <h2 class="text-3xl font-bold mt-1">R$ 2,50</h2>
+                        </div>
+                        <div class="bg-white/20 px-4 py-1 rounded-full">
+                            <p class="text-sm font-medium text-white">Nível 1</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-white/20 flex justify-between">
+                        <button onclick="showModal('deposit-modal')" class="text-center">
+                            <div class="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mx-auto hover:bg-white/30 transition-colors">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                            <p class="text-xs mt-2 opacity-90">Depositar</p>
+                        </button>
+                        <button onclick="showModal('withdraw-modal')" class="text-center">
+                            <div class="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mx-auto hover:bg-white/30 transition-colors">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                            <p class="text-xs mt-2 opacity-90">Sacar</p>
+                        </button>
+                        <button onclick="showModal('transfer-modal')" class="text-center">
+                            <div class="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mx-auto hover:bg-white/30 transition-colors">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <p class="text-xs mt-2 opacity-90">Transferir</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-white rounded-xl p-4 card">
+                        <p class="text-sm text-gray-500">Ganho total</p>
+                        <p class="text-xl font-semibold text-green-500">R$ 2,50</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 card">
+                        <p class="text-sm text-gray-500">Tarefas completas</p>
+                        <p class="text-xl font-semibold text-blue-500">5</p>
+                    </div>
+                </div>
+
+                <!-- Recent Withdrawals -->
+                <div class="bg-white rounded-xl p-5 card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-semibold text-gray-800">Saques recentes</h3>
+                        <div class="flex space-x-2">
+                            <button id="pause-withdrawals" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="fas fa-pause"></i>
+                            </button>
+                            <button id="play-withdrawals" class="text-blue-500 hidden">
+                                <i class="fas fa-play"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="withdrawals-container">
+                        <div id="withdrawals-wrapper" class="withdrawals-wrapper">
+                            <!-- Withdraw items will be added here dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks Page (hidden by default) -->
+            <div id="tasks-page" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Suas tarefas</h2>
+                    <div class="relative">
+                        <select class="appearance-none bg-white border border-gray-200 rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>Todas</option>
+                            <option>Disponíveis</option>
+                            <option>Completas</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="task-item bg-white rounded-xl p-4 card">
+                        <div class="flex justify-between">
+                            <div>
+                                <div class="flex items-center">
+                                    <div class="bg-purple-100 p-2 rounded-lg mr-3">
+                                        <i class="fas fa-poll text-purple-500"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium text-gray-800">Avaliar</h3>
+                                        <p class="text-sm text-gray-500 mt-1">Avalie este local com 5 estrelas.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-green-500">+R$ 0,50</p>
+                                <button onclick="window.open('https://maps.app.goo.gl/j3hHhsjoz3VYZYBEA', '_blank')" class="mt-2 bg-blue-500 text-white text-xs py-1.5 px-4 rounded-full start-btn hover:bg-blue-600">
+                                    Iniciar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="task-item bg-white rounded-xl p-4 card">
+                        <div class="flex justify-between">
+                            <div>
+                                <div class="flex items-center">
+                                    <div class="bg-purple-100 p-2 rounded-lg mr-3">
+                                        <i class="fas fa-poll text-purple-500"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium text-gray-800">Avaliar</h3>
+                                        <p class="text-sm text-gray-500 mt-1">Avalie este local com 5 estrelas.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-green-500">+R$ 0,50</p>
+                                <button onclick="window.open('https://maps.app.goo.gl/tebv58BRtshTLCZR9', '_blank')" class="mt-2 bg-blue-500 text-white text-xs py-1.5 px-4 rounded-full start-btn hover:bg-blue-600">
+                                    Iniciar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="task-item bg-white rounded-xl p-4 card">
+                        <div class="flex justify-between">
+                            <div>
+                                <div class="flex items-center">
+                                    <div class="bg-purple-100 p-2 rounded-lg mr-3">
+                                        <i class="fas fa-poll text-purple-500"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium text-gray-800">Avaliar</h3>
+                                        <p class="text-sm text-gray-500 mt-1">Avalie este local com 5 estrelas.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-green-500">+R$ 0,50</p>
+                                <button onclick="window.open('https://maps.app.goo.gl/2kz61yekybSFEFwH9', '_blank')" class="mt-2 bg-blue-500 text-white text-xs py-1.5 px-4 rounded-full start-btn hover:bg-blue-600">
+                                    Iniciar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="task-item bg-white rounded-xl p-4 card">
+                        <div class="flex justify-between">
+                            <div>
+                                <div class="flex items-center">
+                                    <div class="bg-purple-100 p-2 rounded-lg mr-3">
+                                        <i class="fas fa-poll text-purple-500"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium text-gray-800">Avaliar</h3>
+                                        <p class="text-sm text-gray-500 mt-1">Avalie este local com 5 estrelas.</p>
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-green-500">+R$ 0,50</p>
+                                <button onclick="window.open('https://maps.app.goo.gl/V5bdR9v4VE21v6PbA', '_blank')" class="mt-2 bg-blue-500 text-white text-xs py-1.5 px-4 rounded-full start-btn hover:bg-blue-600">
+                                    Iniciar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="task-item bg-white rounded-xl p-4 card">
+                        <div class="flex justify-between">
+                            <div>
+                                <div class="flex items-center">
+                                    <div class="bg-purple-100 p-2 rounded-lg mr-3">
+                                        <i class="fas fa-poll text-purple-500"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium text-gray-800">Avaliar</h3>
+                                        <p class="text-sm text-gray-500 mt-1">Avalie este local com 5 estrelas.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-green-500">+R$ 0,50</p>
+                                <button onclick="window.open('https://maps.app.goo.gl/tNjEi7MYdco6qEXQ9', '_blank')" class="mt-2 bg-blue-500 text-white text-xs py-1.5 px-4 rounded-full start-btn hover:bg-blue-600">
+                                    Iniciar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 bg-blue-50 rounded-xl p-4 flex items-start">
+                    <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                    <p class="text-sm text-blue-800">Novas tarefas são adicionadas diariamente. Volte sempre para conferir!</p>
+                </div>
+            </div>
+
+            <!-- Help Page (hidden by default) -->
+            <div id="help-page" class="hidden">
+                <h2 class="text-xl font-bold mb-6 text-gray-800">Ajuda e Suporte</h2>
+
+                <div onclick="showFAQ()" class="bg-white rounded-xl p-4 mb-4 card cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="bg-blue-100 p-3 rounded-xl mr-3">
+                                <i class="fas fa-question-circle text-blue-500"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-800">Perguntas frequentes</h3>
+                                <p class="text-sm text-gray-500">Encontre respostas rápidas</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </div>
+                </div>
+
+                <div onclick="showContact()" class="bg-white rounded-xl p-4 mb-4 card cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="bg-purple-100 p-3 rounded-xl mr-3">
+                                <i class="fas fa-envelope text-purple-500"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-800">Contate-nos</h3>
+                                <p class="text-sm text-gray-500">Fale com nosso suporte</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </div>
+                </div>
+
+                <div onclick="showTutorials()" class="bg-white rounded-xl p-4 mb-6 card cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="bg-green-100 p-3 rounded-xl mr-3">
+                                <i class="fas fa-book text-green-500"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-800">Tutoriais</h3>
+                                <p class="text-sm text-gray-500">Aprenda a usar o MetaRend</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 rounded-xl p-4 card">
+                    <div class="flex items-start">
+                        <div class="bg-blue-100 p-3 rounded-xl mr-3">
+                            <i class="fas fa-headset text-blue-500"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-800">Suporte 24h</h3>
+                            <p class="text-sm text-blue-800 mt-1">Nosso time está sempre disponível para te ajudar com qualquer dúvida.</p>
+                            <button onclick="window.open('https://services.zangi.com/dl/conversation/1064795500', '_blank')" class="btn btn-primary mt-3">
+                                <i class="fas fa-comment-dots mr-2"></i> Abrir chat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ Modal -->
+            <div id="faq-modal" class="modal">
+                <div class="modal-content">
+                    <h3 class="font-medium text-lg mb-4 text-gray-800">Perguntas Frequentes</h3>
+                    <div class="text-left space-y-4">
+                        <div>
+                            <h4 class="font-medium text-gray-800">Como começar a ganhar dinheiro?</h4>
+                            <p class="text-sm text-gray-500 mt-1">Basta completar das tarefas disponíveis na aba "Tarefas". Cada tarefa concluída com sucesso adiciona valor ao seu saldo.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-800">Como faço para sacar meu dinheiro?</h4>
+                            <p class="text-sm text-gray-500 mt-1">Atualmente, o saque pode ser solicitado na seção de saques, que estará disponível em breve. O saque estará disponível apenas após atingir o valor mínimo exigido, conforme o seu nível.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-800">Quanto tempo leva para as tarefas serem validadas?</h4>
+                            <p class="text-sm text-gray-500 mt-1">A validação é automática na maioria dos casos, mas pode levar até alguns minutos para tarefas mais complexas.</p>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('faq-modal')" class="btn btn-primary mt-6">Voltar</button>
+                </div>
+            </div>
+
+            <!-- Contact Modal -->
+            <div id="contact-modal" class="modal">
+                <div class="modal-content">
+                    <h3 class="font-medium text-lg mb-4 text-gray-800">Contate-nos</h3>
+                    <p class="text-sm text-gray-500 mb-4">Entre em contato conosco através dos canais abaixo:</p>
+                    <div class="space-y-3 text-left">
+                        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                            <i class="fas fa-envelope text-purple-500 mr-3"></i>
+                            <span>Metarend@proton.me</span>
+                        </div>
+                        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                            <i class="fas fa-phone text-purple-500 mr-3"></i>
+                            <span>10-6479-5500</span>
+                        </div>
+                        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                            <i class="fab fa-whatsapp text-purple-500 mr-3"></i>
+                            <span></span>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('contact-modal')" class="btn btn-primary mt-6">Voltar</button>
+                </div>
+            </div>
+
+            <!-- Tutorials Modal -->
+            <div id="tutorials-modal" class="modal">
+                <div class="modal-content">
+                    <h3 class="font-medium text-lg mb-4 text-gray-800">Tutoriais</h3>
+                    <div class="text-left space-y-4">
+                        <div>
+                            <h4 class="font-medium text-gray-800">Como completar tarefas</h4>
+                            <p class="text-sm text-gray-500 mt-1">Assista nosso vídeo tutorial sobre como completar tarefas e maximizar seus ganhos.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-800">Como aumentar seu nível</h4>
+                            <p class="text-sm text-gray-500 mt-1">Complete mais tarefas para subir de nível e desbloquear tarefas com maior remuneração.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-800">Dicas para ganhar mais</h4>
+                            <p class="text-sm text-gray-500 mt-1">Acesse nosso guia com dicas exclusivas para aumentar seus ganhos diários.</p>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('tutorials-modal')" class="btn btn-primary mt-6">Voltar</button>
+                </div>
+            </div>
+
+            <!-- Chat Modal -->
+            <div id="chat-modal" class="modal">
+                <div class="modal-content">
+                    <h3 class="font-medium text-lg mb-4 text-gray-800">Suporte Online</h3>
+                    <p class="text-sm text-gray-500 mb-4">Nosso atendente virtual está disponível para te ajudar. Digite sua mensagem abaixo:</p>
+                    <div class="bg-gray-100 rounded-lg p-4 h-40 mb-4 overflow-y-auto">
+                        <div class="text-right mb-3">
+                            <div class="bg-blue-500 text-white rounded-lg p-2 inline-block max-w-xs">
+                                <p class="text-sm">Olá! Como posso te ajudar hoje?</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex">
+                        <input type="text" placeholder="Digite sua mensagem..." class="flex-1 border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button class="bg-blue-500 text-white px-4 rounded-r-lg hover:bg-blue-600 transition-colors">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <button onclick="closeModal('chat-modal')" class="btn btn-secondary mt-4">Fechar</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Floating Action Button -->
+        <button onclick="showModal('deposit-modal')" class="fab">
+            <i class="fas fa-plus"></i>
+        </button>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav fixed bottom-0 left-0 right-0 flex justify-around items-center p-3">
+            <button onclick="showPage('dashboard-page')" class="flex flex-col items-center text-blue-500 active-tab">
+                <i class="fas fa-home text-xl"></i>
+                <span class="text-xs mt-1">Início</span>
+            </button>
+            <button onclick="showPage('tasks-page')" class="flex flex-col items-center text-gray-500">
+                <i class="fas fa-tasks text-xl"></i>
+                <span class="text-xs mt-1">Tarefas</span>
+            </button>
+            <button onclick="showPage('help-page')" class="flex flex-col items-center text-gray-500">
+                <i class="fas fa-question-circle text-xl"></i>
+                <span class="text-xs mt-1">Ajuda</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        // Function to show selected page and update active tab
+        function showPage(pageId) {
+            // Hide all pages
+            document.getElementById('dashboard-page').classList.add('hidden');
+            document.getElementById('tasks-page').classList.add('hidden');
+            document.getElementById('help-page').classList.add('hidden');
+
+            // Show selected page
+            document.getElementById(pageId).classList.remove('hidden');
+
+            // Update active tab
+            const navButtons = document.querySelectorAll('nav button');
+            navButtons.forEach(button => {
+                button.classList.remove('active-tab');
+                button.classList.add('text-gray-500');
+                button.classList.remove('text-blue-500');
+            });
+
+            // Set current button as active
+            event.currentTarget.classList.add('active-tab');
+            event.currentTarget.classList.add('text-blue-500');
+            event.currentTarget.classList.remove('text-gray-500');
+        }
+
+        // Modal functions
+        function showModal(modalId, message = '') {
+            if (modalId === 'service-unavailable-modal' && message) {
+                document.getElementById('service-message').textContent = message;
+            }
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function showServiceUnavailable(serviceName) {
+            const messages = {
+                'deposit': 'Depósito automático indisponível no momento. Para realizar um depósito, entre em contato com nosso suporte.',
+                'withdraw': 'Saque automático indisponível no momento. Para realizar um saque, entre em contato com nosso suporte.',
+                'transfer': 'Transferência automática indisponível no momento. Para realizar uma transferência, entre em contato com nosso suporte.'
+            };
+            showModal('service-unavailable-modal', messages[serviceName]);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+                
+        function closeServiceModal() {
+            const modal = document.getElementById('service-unavailable-modal');
+            const content = modal.querySelector('.modal-content');
+            content.classList.add('hide');
+                    
+            setTimeout(() => {
+                modal.style.display = 'none';
+                content.classList.remove('hide');
+            }, 300);
+        }
+                
+        function showContactSupport() {
+            closeServiceModal();
+            setTimeout(() => {
+                showModal('contact-modal');
+            }, 350);
+        }
+
+        // Notification button
+        document.getElementById('notification-btn').addEventListener('click', function() {
+            showModal('notification-modal');
+        });
+
+        // Help page functions
+        function showFAQ() {
+            showModal('faq-modal');
+        }
+
+        function showContact() {
+            showModal('contact-modal');
+        }
+
+        function showTutorials() {
+            showModal('tutorials-modal');
+        }
+
+        function openChat() {
+            window.open('Olá! Vamos trocar mensagens de forma segura no Zangi Messenger. Clique neste link para se conectar comigo. Se você ainda não tem Zangi, baixe gratuitamente através deste mesmo link → https://services.zangi.com/dl/conversation/1064795500', '_blank');
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                const modal = event.target;
+                if (modal.id === 'service-unavailable-modal') {
+                    closeServiceModal();
+                } else {
+                    modal.style.display = 'none';
+                }
+            }
+        }
+
+        // Function to generate random phone number with masked digits
+        function generateRandomPhone() {
+            const last4 = Math.floor(Math.random() * 9000) + 1000; // 1000-9999
+            return `+55** *****${last4}`;
+        }
+
+        // Function to generate random amount between 50 and 1500
+        function generateRandomAmount() {
+            return (Math.floor(Math.random() * 1451) + 50).toFixed(2); // 50.00 - 1500.00
+        }
+
+        // Function to generate random time ago (1-60 minutes)
+        function generateRandomTimeAgo() {
+            const minutes = Math.floor(Math.random() * 60) + 1;
+            return `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} atrás`;
+        }
+
+        // Function to generate random online users count (10-100)
+        function generateRandomOnlineUsers() {
+            return Math.floor(Math.random() * 50) + 10; // 10-100
+        }
+
+        // Array to store generated withdrawals and avoid duplicates
+        const generatedWithdrawals = [];
+
+        // Function to create a beautiful withdrawal element
+        function createWithdrawalElement() {
+            let phone, amount;
+
+            // Generate unique phone/amount combination
+            do {
+                phone = generateRandomPhone();
+                amount = generateRandomAmount();
+            } while (generatedWithdrawals.some(w => w.phone === phone && w.amount === amount));
+
+            // Store the generated withdrawal
+            generatedWithdrawals.push({phone, amount});
+
+            // Remove oldest if we have too many
+            if (generatedWithdrawals.length > 50) {
+                generatedWithdrawals.shift();
+            }
+
+            const timeAgo = generateRandomTimeAgo();
+
+            const withdrawal = document.createElement('div');
+            withdrawal.className = 'withdraw-item';
+            withdrawal.innerHTML = `
+                <div class="flex items-center">
+                    <div class="withdraw-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div>
+                        <p class="withdraw-phone">${phone}</p>
+                        <p class="withdraw-time">${timeAgo}</p>
+                    </div>
+                </div>
+                <p class="withdraw-amount">R$ ${amount}</p>
+            `;
+
+            return withdrawal;
+        }
+
+        // Improved infinite scrolling withdrawals animation
+        function setupWithdrawals() {
+            const container = document.getElementById('withdrawals-container');
+            const wrapper = document.getElementById('withdrawals-wrapper');
+
+            // Clear existing items
+            wrapper.innerHTML = '';
+
+            // Initial withdrawals (6 items to ensure smooth animation)
+            for (let i = 0; i < 2400; i++) {
+                wrapper.appendChild(createWithdrawalElement());
+            }
+
+            let currentPosition = 0;
+            const itemHeight = 14400; // Height of each withdrawal item
+            const scrollSpeed = 0.5; // Slower scroll speed
+            let isPaused = false;
+            let animationId;
+            let lastAnimationTime = 0;
+
+            function animate(currentTime) {
+                if (!lastAnimationTime) {
+                    lastAnimationTime = currentTime;
+                }
+
+                const deltaTime = currentTime - lastAnimationTime;
+                lastAnimationTime = currentTime;
+
+                if (isPaused) {
+                    animationId = requestAnimationFrame(animate);
+                    return;
+                }
+
+                // Calculate movement based on time to ensure smoothness
+                const movement = scrollSpeed * (deltaTime / 16); // Normalize to 60fps
+                currentPosition += movement;
+
+                // When we've scrolled one item height
+                if (currentPosition >= itemHeight) {
+                    // Get the top item that's about to disappear
+                    const topItem = wrapper.firstElementChild;
+
+                    // Remove the top item
+                    wrapper.removeChild(topItem);
+
+                    // Add new item at bottom
+                    wrapper.appendChild(createWithdrawalElement());
+
+                    // Reset position
+                    currentPosition = 0;
+                    wrapper.style.transform = 'translateY(0)';
+                } else {
+                    // Apply smooth scrolling
+                    wrapper.style.transform = `translateY(-${currentPosition}px)`;
+                }
+
+                animationId = requestAnimationFrame(animate);
+            }
+
+            // Start animation
+            animationId = requestAnimationFrame(animate);
+
+            // Pause/play functionality
+            document.getElementById('pause-withdrawals').addEventListener('click', function() {
+                isPaused = true;
+                this.classList.add('hidden');
+                document.getElementById('play-withdrawals').classList.remove('hidden');
+            });
+
+            document.getElementById('play-withdrawals').addEventListener('click', function() {
+                isPaused = false;
+                this.classList.add('hidden');
+                document.getElementById('pause-withdrawals').classList.remove('hidden');
+                lastAnimationTime = 0; // Reset animation time
+                animationId = requestAnimationFrame(animate);
+            });
+
+            // Clean up animation when leaving page
+            window.addEventListener('beforeunload', () => {
+                cancelAnimationFrame(animationId);
+            });
+        }
+
+        // Initialize when page loads
+        window.onload = function() {
+            setupWithdrawals();
+
+            // Set random online users count
+            const onlineUsersCount = generateRandomOnlineUsers();
+            document.getElementById('online-users-count').textContent = onlineUsersCount;
+
+            // Update online users count every 30 seconds with small variations
+            setInterval(() => {
+                const currentCount = parseInt(document.getElementById('online-users-count').textContent);
+                const variation = Math.floor(Math.random() * 5) - 2; // -2 to +2
+                const newCount = Math.max(10, Math.min(100, currentCount + variation));
+                document.getElementById('online-users-count').textContent = newCount;
+            }, 30000);
+        };
+    </script>
+</body>
+</html>
