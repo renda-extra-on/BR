@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot de Oportunidades</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .chat-container {
+            height: calc(100vh - 120px);
+            background-image: linear-gradient(to bottom, #f0fdf4, #dcfce7);
+        }
+        .message {
+            max-width: 80%;
+            word-wrap: break-word;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: messageAppear 0.3s ease-out forwards;
+        }
+        @keyframes messageAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .typing-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #4ade80;
+            margin-right: 4px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        .typing-indicator:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); background-color: #4ade80; }
+            30% { transform: translateY(-5px); background-color: #22c55e; }
+        }
+        .option-btn {
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .option-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .option-btn:active {
+            transform: translateY(0);
+        }
+        .bot-message {
+            background-color: white;
+            border-radius: 18px 18px 18px 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .user-message {
+            background-color: #4ade80;
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .highlight {
+            color: #166534;
+            font-weight: 600;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .emoji {
+            font-size: 1.2em;
+            vertical-align: middle;
+        }
+        .info-box {
+            background-color: #f0fdf4;
+            border-left: 4px solid #4ade80;
+            padding: 8px 12px;
+            margin: 8px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .step-box {
+            background-color: #f0fdf4;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #dcfce7;
+        }
+        .bullet-point {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }
+        .bullet {
+            margin-right: 8px;
+            color: #166534;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden h-screen flex flex-col">
+        <!-- Chat header -->
+        <div class="bg-gradient-to-r from-green-600 to-green-500 px-4 py-3 flex items-center">
+            <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-md">
+                <i class="fas fa-robot text-green-600 text-xl"></i>
+            </div>
+            <div class="ml-3">
+                <h2 class="text-white font-semibold">AssistenteBot</h2>
+                <p class="text-green-100 text-xs">Online</p>
+            </div>
+        </div>
+
+        <!-- Chat container -->
+        <div class="chat-container overflow-y-auto p-4 flex flex-col space-y-3 scrollbar-hide" id="chatContainer">
+            <!-- Welcome message -->
+            <div class="flex items-start">
+                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                    <i class="fas fa-robot text-gray-600"></i>
+                </div>
+                <div class="message bot-message py-2 px-3 text-sm">
+                    Olá! <span class="emoji">👋</span> Que bom ter você por aqui! Eu sou o assistente da nossa plataforma de oportunidades e vou te guiar passo a passo para você começar a ganhar dinheiro pelo celular.
+                </div>
+            </div>
+        </div>
+
+        <!-- Options buttons -->
+        <div id="optionsContainer" class="bg-gray-50 px-4 py-3 border-t">
+            <div class="flex justify-center">
+                <button class="option-btn bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full py-3 px-6 text-sm font-bold hover:from-green-600 hover:to-green-700 shadow-lg transform hover:scale-105 transition-all duration-200">
+                    <i class="fas fa-arrow-right mr-2"></i> CONTINUAR
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatContainer = document.getElementById('chatContainer');
+            const optionsContainer = document.getElementById('optionsContainer');
+            
+            let isBotTyping = false;
+            let conversationStep = 0;
+
+            // Function to simulate typing delay
+            function simulateTyping(text, callback) {
+                isBotTyping = true;
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'flex items-start mt-1';
+                typingDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                        <i class="fas fa-robot text-gray-600"></i>
+                    </div>
+                    <div class="typing-indicator-container flex items-center">
+                        <span class="typing-indicator"></span>
+                        <span class="typing-indicator"></span>
+                        <span class="typing-indicator"></span>
+                    </div>
+                `;
+
+                chatContainer.appendChild(typingDiv);
+                scrollToBottom();
+
+                // Calculate typing time based on message length (50ms per character)
+                const typingTime = Math.max(1000, Math.min(text.length * 50, 3000));
+
+                setTimeout(() => {
+                    chatContainer.removeChild(typingDiv);
+                    callback();
+                    isBotTyping = false;
+                }, typingTime);
+            }
+
+            // Option button handler
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.option-btn')) {
+                    const btn = e.target.closest('.option-btn');
+                    if (isBotTyping) return;
+
+                    const response = "CONTINUAR";
+                    addUserMessage(response);
+                    hideOptions();
+                    processResponse(response);
+                }
+            });
+
+            function showOptions() {
+                optionsContainer.innerHTML = `
+                    <div class="flex justify-center">
+                        <button class="option-btn bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full py-3 px-6 text-sm font-bold hover:from-green-600 hover:to-green-700 shadow-lg transform hover:scale-105 transition-all duration-200">
+                            <i class="fas fa-arrow-right mr-2"></i> CONTINUAR
+                        </button>
+                    </div>
+                `;
+                optionsContainer.classList.remove('hidden');
+                scrollToBottom();
+            }
+
+            function hideOptions() {
+                optionsContainer.classList.add('hidden');
+            }
+
+            function addBotMessage(text) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'flex items-start';
+
+                messageDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                        <i class="fas fa-robot text-gray-600"></i>
+                    </div>
+                    <div class="message bot-message py-2 px-3 text-sm">
+                        ${text}
+                    </div>
+                `;
+
+                chatContainer.appendChild(messageDiv);
+                scrollToBottom();
+            }
+
+            function addUserMessage(text) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'flex items-start justify-end';
+
+                messageDiv.innerHTML = `
+                    <div class="message user-message py-2 px-3 text-sm">
+                        ${text}
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center ml-2">
+                        <i class="fas fa-user text-white"></i>
+                    </div>
+                `;
+
+                chatContainer.appendChild(messageDiv);
+                scrollToBottom();
+            }
+
+            function addInfoBox(text) {
+                const infoBox = document.createElement('div');
+                infoBox.className = 'flex items-start';
+                infoBox.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                        <i class="fas fa-robot text-gray-600"></i>
+                    </div>
+                    <div class="info-box bot-message py-2 px-3 text-sm">
+                        ${text}
+                    </div>
+                `;
+                chatContainer.appendChild(infoBox);
+                scrollToBottom();
+            }
+
+            function addStepBox(text) {
+                const stepBox = document.createElement('div');
+                stepBox.className = 'flex items-start';
+                stepBox.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                        <i class="fas fa-robot text-gray-600"></i>
+                    </div>
+                    <div class="step-box bot-message py-2 px-3 text-sm">
+                        ${text}
+                    </div>
+                `;
+                chatContainer.appendChild(stepBox);
+                scrollToBottom();
+            }
+
+            function addBulletList(items) {
+                const listDiv = document.createElement('div');
+                listDiv.className = 'flex items-start';
+                
+                let listHTML = `
+                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                        <i class="fas fa-robot text-gray-600"></i>
+                    </div>
+                    <div class="bot-message py-2 px-3 text-sm">
+                `;
+                
+                items.forEach(item => {
+                    listHTML += `
+                        <div class="bullet-point">
+                            <span class="bullet">•</span>
+                            <span>${item}</span>
+                        </div>
+                    `;
+                });
+                
+                listHTML += `</div>`;
+                listDiv.innerHTML = listHTML;
+                chatContainer.appendChild(listDiv);
+                scrollToBottom();
+            }
+
+            function scrollToBottom() {
+                setTimeout(() => {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }, 100);
+            }
+
+            function processResponse(response) {
+                if (isBotTyping) return;
+
+                switch(conversationStep) {
+                    case 0:
+                        // First step - explain how it works
+                        simulateTyping("💰 Você ganha dinheiro realizando tarefas simples, como curtir posts, assistir vídeos curtos, compartilhar conteúdos ou responder pesquisas rápidas.", () => {
+                            addBotMessage("💰 Você ganha dinheiro realizando tarefas simples, como curtir posts, assistir vídeos curtos, compartilhar conteúdos ou responder pesquisas rápidas.");
+                            
+                            simulateTyping("💸 Cada tarefa concluída gera um valor em dinheiro, pago direto no seu Pix. Quanto mais tarefas você realizar, mais você vai ganhar.", () => {
+                                addBotMessage("💸 Cada tarefa concluída gera um valor em dinheiro, pago direto no seu Pix. Quanto mais tarefas você realizar, mais você vai ganhar.");
+                                
+                                simulateTyping("❓ Se você está se perguntando: \"Será que preciso pagar algo?\", a resposta é NÃO. Todas as tarefas iniciais são 100% gratuitas. Algumas opções pagas podem aparecer depois, mas são totalmente opcionais — apenas para quem deseja lucrar ainda mais.", () => {
+                                    addBotMessage("❓ Se você está se perguntando: \"Será que preciso pagar algo?\", a resposta é NÃO. Todas as tarefas iniciais são 100% gratuitas. Algumas opções pagas podem aparecer depois, mas são totalmente opcionais — apenas para quem deseja lucrar ainda mais.");
+                                    
+                                    simulateTyping("✅ Sim, o pagamento é garantido! Assim que a tarefa for aprovada, o valor cai no seu Pix em até 24 horas. Pode ficar tranquilo!", () => {
+                                        addBotMessage("✅ Sim, o pagamento é garantido! Assim que a tarefa for aprovada, o valor cai no seu Pix em até 24 horas. Pode ficar tranquilo!");
+                                        
+                                        conversationStep = 1;
+                                        showOptions();
+                                    });
+                                });
+                            });
+                        });
+                        break;
+                    
+                    case 1:
+                        // Security explanation
+                        simulateTyping("ℹ️ Sei que algumas pessoas ficam inseguras com isso, então deixa eu explicar tudo direitinho para você entender como funciona.", () => {
+                            addBotMessage("ℹ️ Sei que algumas pessoas ficam inseguras com isso, então deixa eu explicar tudo direitinho para você entender como funciona.");
+                            
+                            const explanationPoints = [
+                                "📱 <strong>Você vai ganhar dinheiro realizando tarefas simples pelo celular</strong> — coisas que você já faz no dia a dia: curtir posts, assistir vídeos curtos, compartilhar conteúdos e responder pesquisas rápidas.",
+                                "💸 <strong>Cada tarefa concluída gera um valor em dinheiro, pago direto no seu Pix.</strong> Quanto mais tarefas você realizar, mais você vai lucrar.",
+                                "❓ <strong>Será que precisa pagar algo?</strong> A resposta é NÃO. Todas as tarefas iniciais são 100% gratuitas. Algumas opções pagas podem aparecer depois, mas são totalmente opcionais — apenas para quem quiser lucrar mais.",
+                                "✅ <strong>O pagamento é garantido!</strong> Assim que a tarefa for aprovada, o valor cai no seu Pix em até 24 horas. Pode ficar tranquilo."
+                            ];
+                            
+                            addBulletList(explanationPoints);
+                            
+                            simulateTyping("ℹ️ <strong>Sei que algumas pessoas ficam inseguras com isso</strong>, então deixa eu explicar tudo direitinho para você entender:", () => {
+                                addBotMessage("ℹ️ <strong>Sei que algumas pessoas ficam inseguras com isso</strong>, então deixa eu explicar tudo direitinho para você entender:");
+                                
+                                const securityPoints = [
+                                    "🔒 <strong>Não é golpe.</strong> Você realiza tarefas simples e recebe dinheiro sem precisar fornecer dados sensíveis ou pagar nada.",
+                                    "💰 <strong>Sobre os saques:</strong> existe um valor mínimo para sacar, mas sempre que você clicar no botão de saque no site, esse valor mínimo estará claramente informado.",
+                                    "👥 <strong>Não precisa indicar amigos.</strong> Você ganha apenas pelas tarefas que realiza.",
+                                    "🏢 <strong>Somos uma empresa pequena, mas confiável.</strong> Se nosso site chegou até você por divulgação, é porque pagamos alguns divulgadores para espalhar a oportunidade. Somos 100% confiáveis, apenas pequenos por enquanto — mas isso não afeta a certeza do pagamento. Você recebe tudo certinho.",
+                                    "🔐 <strong>Sua segurança é garantida.</strong> Nunca pedimos senha, CPF ou informações pessoais.",
+                                    "📘 <strong>E se alguma tarefa parecer confusa, fique tranquilo.</strong> Todas vêm com instruções bem claras, e você sempre terá orientação."
+                                ];
+                                
+                                addBulletList(securityPoints);
+                                
+                                conversationStep = 2;
+                                showOptions();
+                            });
+                        });
+                        break;
+                    
+                    case 2:
+                        // How tasks arrive
+                        simulateTyping("🤔 <strong>Você deve estar se perguntando: como essas tarefas chegam até você?</strong>", () => {
+                            addBotMessage("🤔 <strong>Você deve estar se perguntando: como essas tarefas chegam até você?</strong>");
+                            
+                            const taskPoints = [
+                                "🌐 Empresas de outros países ou regiões precisam que tarefas simples sejam realizadas por pessoas reais. Essas tarefas são enviadas automaticamente para nossa plataforma, e nós distribuímos manualmente entre os usuários, garantindo que todos tenham a oportunidade de completar. Por isso, existe um limite diário de tarefas.",
+                                "💡 <strong>Exemplo:</strong> uma empresa dos Estados Unidos precisa que 1.000 pessoas avaliem uma empresa para que ela tenha uma boa avaliação. Ela envia essa tarefa para nossa plataforma, e nós a repassamos aos usuários, oferecendo uma pequena porcentagem do lucro.",
+                                "💵 <strong>Cada tarefa concluída gera um pequeno valor</strong>, que vem diretamente do pagamento da empresa à plataforma.",
+                                "🔐 <strong>Para garantir a segurança de todos os usuários</strong>, removemos a opção de saque automático. Agora, você realiza o saque diretamente com um atendente, evitando erros ou perdas. Um atendente fará a transferência diretamente de uma conta Pix para a sua, sem precisar de terceiros."
+                            ];
+                            
+                            addBulletList(taskPoints);
+                            
+                            conversationStep = 3;
+                            showOptions();
+                        });
+                        break;
+                    
+                    case 3:
+                        // Level system
+                        simulateTyping("🚀 <strong>Você começa realizando tarefas simples de valor pequeno</strong>, mas já é possível sacar o dinheiro que ganhar.", () => {
+                            addBotMessage("🚀 <strong>Você começa realizando tarefas simples de valor pequeno</strong>, mas já é possível sacar o dinheiro que ganhar.");
+                            
+                            const levelPoints = [
+                                "⬆️ <strong>Conforme realiza mais tarefas, você vai desbloqueando tarefas maiores</strong>, com valores maiores. No início, os ganhos são menores, mas aumentam ao longo do tempo, podendo chegar a até R$100 por dia.",
+                                "📈 <strong>Temos um sistema de níveis:</strong> a cada nível, a complexidade e o valor das tarefas aumentam."
+                            ];
+                            
+                            addBulletList(levelPoints);
+                            
+                            const levelExamples = [
+                                "No <strong>nível 0</strong>, você só precisa curtir posts.",
+                                "No <strong>nível 1</strong>, seguir pessoas em redes sociais.",
+                                "No <strong>nível 3</strong>, avaliar empresas.",
+                                "No <strong>nível 4</strong>, responder perguntas."
+                            ];
+                            
+                            addBulletList(levelExamples);
+                            
+                            simulateTyping("E assim por diante — o valor sempre aumenta.", () => {
+                                addBotMessage("E assim por diante — o valor sempre aumenta.");
+                                
+                                simulateTyping("✅ <strong>Não se preocupe em errar uma tarefa.</strong> Você pode refazer ou escolher outra do mesmo nível.", () => {
+                                    addBotMessage("✅ <strong>Não se preocupe em errar uma tarefa.</strong> Você pode refazer ou escolher outra do mesmo nível.");
+                                    
+                                    conversationStep = 4;
+                                    showOptions();
+                                });
+                            });
+                        });
+                        break;
+                    
+                    case 4:
+                        // Additional clarifications
+                        simulateTyping("💡 <strong>Apenas para esclarecer alguns pontos:</strong>", () => {
+                            addBotMessage("💡 <strong>Apenas para esclarecer alguns pontos:</strong>");
+                            
+                            const clarificationPoints = [
+                                "📈 <strong>Você começa ganhando pouco e cresce com o tempo.</strong>",
+                                "🆕 <strong>Todos os dias há tarefas novas</strong>, mas existe um limite diário de tarefas que você pode realizar.",
+                                "💰 <strong>Não é preciso pagar nada para iniciar.</strong> Em níveis mais altos, onde as empresas pagam mais pelas tarefas, podem aparecer algumas opções pagas, mas o dinheiro volta para você após a realização. No início, não se preocupe com isso — a maioria das tarefas é totalmente opcional.",
+                                "🏢 <strong>Como mencionei, nossa empresa é pequena</strong>, mas já contamos com mais de 10 mil usuários ativos. Recomendamos que você divulgue nossa plataforma, pois quanto mais usuários ativos temos, mais tarefas conseguimos receber das empresas e mais todos os usuários lucram."
+                            ];
+                            
+                            addBulletList(clarificationPoints);
+                            
+                            simulateTyping("❓ <strong>Agora que você entendeu como funciona, deseja continuar para saber como começar a realizar tarefas e ganhar dinheiro?</strong>", () => {
+                                addBotMessage("❓ <strong>Agora que você entendeu como funciona, deseja continuar para saber como começar a realizar tarefas e ganhar dinheiro?</strong>");
+                                
+                                conversationStep = 5;
+                                showOptions();
+                            });
+                        });
+                        break;
+                    
+                    case 5:
+                        // How to start
+                        simulateTyping("E agora, como começar imediatamente:", () => {
+                            addBotMessage("E agora, como começar imediatamente:");
+                            
+                            addStepBox("1️⃣ Baixe o aplicativo Zangi (gratuito na Play Store ou App Store)");
+                            
+                            simulateTyping("2️⃣ Procure dentro do app pelo número 10-6479-5500", () => {
+                                addBotMessage("2️⃣ Procure dentro do app pelo número 10-6479-5500");
+                                
+                                simulateTyping("3️⃣ Envie uma mensagem e siga as instruções para liberar suas primeiras tarefas", () => {
+                                    addBotMessage("3️⃣ Envie uma mensagem e siga as instruções para liberar suas primeiras tarefas");
+                                    
+                                    simulateTyping("✨ Assim que fizer isso, você poderá executar tarefas simples, receber suas primeiras comissões e sacar pelo Pix sem precisar gastar nada.", () => {
+                                        addBotMessage("✨ Assim que fizer isso, você poderá executar tarefas simples, receber suas primeiras comissões e sacar pelo Pix sem precisar gastar nada.");
+                                        
+                                        simulateTyping("Se surgir qualquer dúvida, não se preocupe. Todas as tarefas vêm com instruções claras, e você sempre terá suporte.", () => {
+                                            addBotMessage("Se surgir qualquer dúvida, não se preocupe. Todas as tarefas vêm com instruções claras, e você sempre terá suporte.");
+                                            
+                                            conversationStep = 6;
+                                            showOptions();
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                        break;
+                    
+                    case 6:
+                        // Final message
+                        simulateTyping("🎉 Excelente! Você está pronto para começar a ganhar dinheiro!", () => {
+                            addBotMessage("🎉 Excelente! Você está pronto para começar a ganhar dinheiro!");
+                            
+                            simulateTyping("Para recapitular os passos:", () => {
+                                addBotMessage("Para recapitular os passos:");
+                                
+                                addStepBox("1️⃣ Baixe o Zangi (Play Store/App Store)");
+                                addStepBox("2️⃣ Chame no Zangi o número <strong>10-6479-5500</strong>");
+                                addStepBox("3️⃣ Siga as instruções para liberar suas tarefas");
+                                
+                                simulateTyping("🔒 Sua privacidade é 100% garantida - não pedimos nenhum dado sensível", () => {
+                                    addBotMessage("🔒 Sua privacidade é 100% garantida - não pedimos nenhum dado sensível");
+                                    
+                                    simulateTyping("Esta conversa será encerrada agora. Boa sorte e ótimos ganhos! 😊", () => {
+                                        addBotMessage("Esta conversa será encerrada agora. Boa sorte e ótimos ganhos! 😊");
+                                        
+                                        endConversation();
+                                    });
+                                });
+                            });
+                        });
+                        break;
+                }
+            }
+
+            function endConversation() {
+                optionsContainer.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
